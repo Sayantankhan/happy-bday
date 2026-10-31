@@ -196,6 +196,9 @@ async function playBirthdaySong() {
 }
 
 async function listenForBlow() {
+  // One attempt per page load: refresh is required to enable this button again.
+  startBtn.disabled = true;
+  startBtn.setAttribute('aria-disabled', 'true');
   prepareBirthdaySong();
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
