@@ -88,6 +88,10 @@
   <div class="controls">
     <button id="start">🎤 Allow microphone & continue</button>
     <p id="status">Tap below and choose Allow when Safari asks for microphone access.</p>
+    <audio id="birthdaySong" controls preload="none" style="width:min(100%,330px);margin:8px auto 0;display:block" aria-label="Happy Birthday song">
+      <source src="https://media.vole.wtf/happy-birthday/jazz-trio.mp3" type="audio/mpeg">
+    </audio>
+    <p class="hint">Happy Birthday music: VOLE.wtf · CC0</p>
     <button class="again" id="again">Replay the surprise</button>
     <p class="hint">Microphone audio is analysed on your device; it is not recorded or uploaded.</p>
   </div>
@@ -155,6 +159,10 @@ function extinguish() {
 }
 
 async function listenForBlow() {
+  const birthdaySong = document.getElementById('birthdaySong');
+  if (birthdaySong && birthdaySong.paused) birthdaySong.play().catch(() => {
+    statusEl.textContent = 'Tap the music player to start the Happy Birthday song.';
+  });
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!window.isSecureContext) {
