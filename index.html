@@ -86,7 +86,7 @@
     <canvas id="confetti"></canvas>
   </section>
   <div class="controls">
-    <button id="start">🎤 Allow microphone access</button>
+    <button id="start">Allow microphone and blow 🤩</button>
     <p id="status">Tap Allow microphone access, grant permission, then blow towards the candles.</p>
     <button class="again" id="again">Replay the surprise</button>
     <p class="hint">Microphone audio is analysed on your device; it is not recorded or uploaded.</p>
@@ -241,7 +241,7 @@ function replay() {
   document.querySelectorAll('.smoke').forEach(s => s.remove());
   ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
   againBtn.style.display='none'; startBtn.style.display='inline-block';
-  startBtn.textContent='🎤 Allow microphone access';
+  startBtn.textContent='Allow microphone and blow 🤩';
   startBtn.onclick=listenForBlow;
   statusEl.textContent='Tap Allow microphone access, grant permission, then blow towards the candles.';
 }
