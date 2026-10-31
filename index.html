@@ -66,7 +66,6 @@
   }
   button:active { transform: scale(.98); }
   #status { min-height: 22px; margin: 9px 0 0; font-size: 13px; color: #854262; }
-  .again { display: none; margin-top: 8px; background: #fff; color: #b72b70; border: 1px solid #f4a6c9; box-shadow: none; }
   .hint { font-size: 11px; color: #9b6480; margin: 8px 0 0; }
 </style>
 </head>
@@ -88,13 +87,11 @@
   <div class="controls">
     <button id="start">Allow microphone and blow 🤩</button>
     <p id="status">Tap Allow microphone access, grant permission, then blow towards the candles.</p>
-    <button class="again" id="again">Replay the surprise</button>
     <p class="hint">Microphone audio is analysed on your device; it is not recorded or uploaded.</p>
   </div>
 </main>
 <script>
 const startBtn = document.getElementById('start');
-const againBtn = document.getElementById('again');
 const statusEl = document.getElementById('status');
 const reveal = document.getElementById('reveal');
 const masks = [...document.querySelectorAll('.flame-mask')];
@@ -151,7 +148,6 @@ function extinguish() {
   setTimeout(() => { reveal.classList.add('show'); burstConfetti(); }, 450);
   statusEl.textContent = 'Wish made! Happy birthday! 🎉';
   startBtn.style.display = 'none';
-  againBtn.style.display = 'inline-block';
   if (raf) cancelAnimationFrame(raf);
   if (stream) stream.getTracks().forEach(t => t.stop());
 }
@@ -239,17 +235,7 @@ async function listenForBlow() {
     startBtn.onclick = extinguish;
   }
 }
-function replay() {
-  blown = false; reveal.classList.remove('show'); masks.forEach(m => m.style.opacity='0');
-  document.querySelectorAll('.smoke').forEach(s => s.remove());
-  ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
-  againBtn.style.display='none'; startBtn.style.display='inline-block';
-  startBtn.textContent='Allow microphone and blow 🤩';
-  startBtn.onclick=listenForBlow;
-  statusEl.textContent='Tap Allow microphone access, grant permission, then blow towards the candles.';
-}
 startBtn.addEventListener('click', listenForBlow);
-againBtn.addEventListener('click', replay);
 </script>
 </body>
 </html>
