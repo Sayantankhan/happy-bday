@@ -86,10 +86,8 @@
     <canvas id="confetti"></canvas>
   </section>
   <div class="controls">
-    <button id="start">🎤 Allow microphone & blow</button>
-    <p id="status">Tap below, allow microphone access, then blow towards the microphone.</p>
-    <button id="musicBtn" type="button" style="margin:8px auto 0;background:#fff;color:#b72b70;border:1px solid #f4a6c9;box-shadow:none">▶ Play Happy Birthday song</button>
-    <p class="hint">A classic Happy Birthday melody — plays directly on this page.</p>
+    <button id="start">🎤 Allow microphone access</button>
+    <p id="status">Tap Allow microphone access, grant permission, then blow towards the candles.</p>
     <button class="again" id="again">Replay the surprise</button>
     <p class="hint">Microphone audio is analysed on your device; it is not recorded or uploaded.</p>
   </div>
@@ -103,6 +101,7 @@ const masks = [...document.querySelectorAll('.flame-mask')];
 const canvas = document.getElementById('confetti');
 const ctx = canvas.getContext('2d');
 let audioContext, analyser, stream, raf, blown = false, particles = [];
+let musicContext, birthdayBuffer, songReadyPromise;
 
 function resizeCanvas() {
   const r = canvas.getBoundingClientRect();
@@ -140,6 +139,7 @@ function burstConfetti() {
 function extinguish() {
   if (blown) return;
   blown = true;
+  playBirthdaySong();
   masks.forEach(m => m.style.opacity = '1');
   // Smoke rises from each candle position.
   const positions = [[16.5,60.2],[22.4,59.6],[30.3,59.9],[35.5,60.6],[38.5,61.2]];
@@ -156,51 +156,47 @@ function extinguish() {
   if (stream) stream.getTracks().forEach(t => t.stop());
 }
 
-const musicBtn = document.getElementById('musicBtn');
-let musicContext;
-
-async function playBirthdaySong() {
+function prepareBirthdaySong() {
+  if (birthdayBuffer) return Promise.resolve();
+  if (songReadyPromise) return songReadyPromise;
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) {
-    statusEl.textContent = 'Your browser does not support audio playback.';
-    return;
-  }
+  if (!AudioCtx) return Promise.reject(new Error('Audio playback is not supported.'));
   try {
-    if (musicContext && musicContext.state !== 'closed') await musicContext.close();
+    // Create and resume the audio context directly from the microphone button tap.
     musicContext = new AudioCtx();
-    await musicContext.resume();
-    // Classic Happy Birthday melody, synthesized locally (no external audio host).
-    const notes = [
-      [392,0.42],[392,0.42],[440,0.84],[392,0.84],[523.25,0.84],[493.88,1.55],
-      [392,0.42],[392,0.42],[440,0.84],[392,0.84],[587.33,0.84],[523.25,1.55],
-      [392,0.42],[392,0.42],[783.99,0.84],[659.25,0.84],[523.25,0.84],[493.88,0.84],[440,1.55],
-      [698.46,0.42],[698.46,0.42],[659.25,0.84],[523.25,0.84],[587.33,0.84],[523.25,1.7]
-    ];
-    let at = musicContext.currentTime + 0.08;
-    for (const [frequency, duration] of notes) {
-      const osc = musicContext.createOscillator();
-      const gain = musicContext.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = frequency;
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.linearRampToValueAtTime(0.16, at + 0.035);
-      gain.gain.setValueAtTime(0.16, at + Math.max(0.04, duration - 0.06));
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
-      osc.connect(gain);
-      gain.connect(musicContext.destination);
-      osc.start(at);
-      osc.stop(at + duration + 0.02);
-      at += duration + 0.045;
-    }
-    if (musicBtn) musicBtn.textContent = '♪ Happy Birthday is playing';
-  } catch (err) {
-    statusEl.textContent = 'Tap the music button once more to start the song.';
+    const resumed = musicContext.resume();
+    songReadyPromise = (async () => {
+      await resumed;
+      const response = await fetch('./hbd.mp3');
+      if (!response.ok) throw new Error('Could not load hbd.mp3');
+      birthdayBuffer = await musicContext.decodeAudioData(await response.arrayBuffer());
+    })();
+    songReadyPromise.catch(() => {});
+    return songReadyPromise;
+  } catch (error) {
+    songReadyPromise = Promise.reject(error);
+    return songReadyPromise;
   }
 }
-if (musicBtn) musicBtn.addEventListener('click', playBirthdaySong);
+
+async function playBirthdaySong() {
+  try {
+    await prepareBirthdaySong();
+    if (musicContext.state !== 'running') await musicContext.resume();
+    const source = musicContext.createBufferSource();
+    const volume = musicContext.createGain();
+    source.buffer = birthdayBuffer;
+    volume.gain.value = 1;
+    source.connect(volume);
+    volume.connect(musicContext.destination);
+    source.start(0);
+  } catch (error) {
+    statusEl.textContent = 'The candles are out! Please check that hbd.mp3 is available and reload the page.';
+  }
+}
 
 async function listenForBlow() {
-  playBirthdaySong();
+  prepareBirthdaySong();
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!window.isSecureContext) {
@@ -245,9 +241,9 @@ function replay() {
   document.querySelectorAll('.smoke').forEach(s => s.remove());
   ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
   againBtn.style.display='none'; startBtn.style.display='inline-block';
-  startBtn.textContent='🎤 Allow microphone & blow';
+  startBtn.textContent='🎤 Allow microphone access';
   startBtn.onclick=listenForBlow;
-  statusEl.textContent='Tap below, allow microphone access, then blow towards the microphone.';
+  statusEl.textContent='Tap Allow microphone access, grant permission, then blow towards the candles.';
 }
 startBtn.addEventListener('click', listenForBlow);
 againBtn.addEventListener('click', replay);
